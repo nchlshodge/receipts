@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Category, Receipt, Screen } from './types';
+import type { Account, Category, IncomeCategory, IncomeEntry, Receipt, Screen } from './types';
 import { loadData, saveData, savePhoto, deletePhoto } from './lib/storage';
 import { recognizeReceiptText, parseReceiptText } from './lib/ocr';
 import { categorize } from './lib/categorize';
@@ -11,6 +11,7 @@ import { SearchScreen } from './screens/SearchScreen';
 import { ScanningScreen } from './screens/ScanningScreen';
 import { ReviewScreen } from './screens/ReviewScreen';
 import { DetailScreen } from './screens/DetailScreen';
+import { IncomeScreen } from './screens/IncomeScreen';
 import { DesktopDashboard } from './screens/DesktopDashboard';
 import { CategorySheet } from './components/CategorySheet';
 
@@ -22,6 +23,9 @@ export default function App() {
   const initial = useRef(loadData()).current;
   const [categories, setCategories] = useState<Category[]>(initial.categories);
   const [receipts, setReceipts] = useState<Receipt[]>(initial.receipts);
+  const [accounts] = useState<Account[]>(initial.accounts);
+  const [incomeCategories, setIncomeCategories] = useState<IncomeCategory[]>(initial.incomeCategories);
+  const [income, setIncome] = useState<IncomeEntry[]>(initial.income);
 
   const [screen, setScreen] = useState<Screen>('home');
   const [prevScreen, setPrevScreen] = useState<Screen>('home');
@@ -37,8 +41,8 @@ export default function App() {
   const isDesktop = useMediaQuery('(min-width: 900px)');
 
   useEffect(() => {
-    saveData({ categories, receipts });
-  }, [categories, receipts]);
+    saveData({ categories, receipts, accounts, incomeCategories, income });
+  }, [categories, receipts, accounts, incomeCategories, income]);
 
   useEffect(() => {
     return () => {
@@ -56,6 +60,7 @@ export default function App() {
       photoId: null,
       owed: false,
       repaid: false,
+      accountId: accounts[0].id,
     };
     setDraftPhotoFile(null);
     setDraftPhotoUrl(null);
@@ -92,6 +97,7 @@ export default function App() {
         photoId: null,
         owed: false,
         repaid: false,
+        accountId: accounts[0].id,
       };
 
       setTimeout(() => {
@@ -108,6 +114,7 @@ export default function App() {
         photoId: null,
         owed: false,
         repaid: false,
+        accountId: accounts[0].id,
       };
       setDraft(newDraft);
       setScreen('review');
@@ -159,6 +166,15 @@ export default function App() {
     setScreen(prevScreen);
   }
 
+  function addIncome(entry: { source: string; date: string; amount: number; category: string }) {
+    const newEntry: IncomeEntry = { id: newId(), accountId: accounts[0].id, ...entry };
+    setIncome((prev) => [newEntry, ...prev]);
+  }
+
+  function deleteIncome(id: string) {
+    setIncome((prev) => prev.filter((i) => i.id !== id));
+  }
+
   function toggleRepaid(id: string) {
     setReceipts((prev) => prev.map((r) => (r.id === id ? { ...r, repaid: !r.repaid } : r)));
   }
@@ -182,6 +198,7 @@ export default function App() {
             onManualEntry={startManualEntry}
             onOpenSearch={() => setScreen('search')}
             onOpenBudget={() => setScreen('budget')}
+            onOpenIncome={() => setScreen('income')}
           />
         );
       case 'budget':
@@ -189,7 +206,19 @@ export default function App() {
           <BudgetScreen
             categories={categories}
             receipts={receipts}
+            income={income}
             onCategoriesChange={setCategories}
+            onBack={() => setScreen('home')}
+          />
+        );
+      case 'income':
+        return (
+          <IncomeScreen
+            income={income}
+            incomeCategories={incomeCategories}
+            onAdd={addIncome}
+            onDelete={deleteIncome}
+            onCategoriesChange={setIncomeCategories}
             onBack={() => setScreen('home')}
           />
         );
@@ -241,6 +270,7 @@ export default function App() {
           <DesktopDashboard
             categories={categories}
             receipts={receipts}
+            income={income}
             query={query}
             filter={filter}
             onCategoriesChange={setCategories}
@@ -249,8 +279,9 @@ export default function App() {
             onOpenReceipt={(id) => openDetail(id, 'home')}
             onFile={handleFile}
             onManualEntry={startManualEntry}
+            onOpenIncome={() => setScreen('income')}
           />
-          {(screen === 'scanning' || screen === 'review' || screen === 'detail') && (
+          {(screen === 'scanning' || screen === 'review' || screen === 'detail' || screen === 'income') && (
             <div className="modal-scrim">
               <div className="modal-card">{renderMobileScreen()}</div>
             </div>

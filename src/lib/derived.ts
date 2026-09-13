@@ -1,4 +1,4 @@
-import type { Category, Receipt } from '../types';
+import type { Category, IncomeEntry, Receipt } from '../types';
 
 export function receiptTotal(receipt: Receipt | { items: { price: number }[] }): number {
   return Math.round(receipt.items.reduce((sum, it) => sum + it.price, 0) * 100) / 100;
@@ -67,6 +67,34 @@ export function suggestedBudget(receipts: Receipt[], categoryName: string, refer
   if (!hasHistory) return null;
   const total = prevMonths.reduce((sum, mk) => sum + categorySpendInMonth(receipts, categoryName, mk), 0);
   return Math.round(total / prevMonths.length);
+}
+
+// ---- Income (mirrors the month-scoped expense helpers above) ----
+
+export function incomeTotalInMonth(income: IncomeEntry[], monthKey: string): number {
+  const sum = income.filter((i) => monthKeyOf(i.date) === monthKey).reduce((total, i) => total + i.amount, 0);
+  return Math.round(sum * 100) / 100;
+}
+
+export function incomeCategoryTotalInMonth(income: IncomeEntry[], categoryName: string, monthKey: string): number {
+  const sum = income
+    .filter((i) => monthKeyOf(i.date) === monthKey && i.category === categoryName)
+    .reduce((total, i) => total + i.amount, 0);
+  return Math.round(sum * 100) / 100;
+}
+
+/** Income minus everything budgeted — the "does every dollar have a job" line. */
+export function unallocatedInMonth(income: IncomeEntry[], categories: Category[], monthKey: string): number {
+  return Math.round((incomeTotalInMonth(income, monthKey) - totalBudget(categories)) * 100) / 100;
+}
+
+export function filterIncome(income: IncomeEntry[], query: string, filter: string | null): IncomeEntry[] {
+  const q = query.trim().toLowerCase();
+  return income.filter((i) => {
+    const matchesCategory = !filter || i.category === filter;
+    const matchesQuery = !q || i.source.toLowerCase().includes(q);
+    return matchesCategory && matchesQuery;
+  });
 }
 
 export function firstItemCategory(receipt: Receipt): string {

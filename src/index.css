@@ -289,6 +289,15 @@ button {
   margin: 0;
 }
 
+.home-bottom-row {
+  display: flex;
+  gap: 10px;
+}
+.home-bottom-row .budget-nav-btn {
+  width: auto;
+  flex: 1;
+}
+
 .budget-nav-btn {
   width: 100%;
   height: 54px;
@@ -421,6 +430,31 @@ button {
 }
 .add-category-row .text-input {
   flex: 1;
+}
+
+/* Income */
+.income-add-card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-raised);
+  padding: 16px;
+  margin-top: 16px;
+}
+.income-add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.income-amount-input {
+  width: 100px;
+  flex: none;
+  text-align: right;
+}
+.income-row {
+  cursor: default;
+}
+.income-row .item-remove {
+  flex: none;
 }
 
 /* Search */

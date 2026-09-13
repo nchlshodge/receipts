@@ -1,17 +1,26 @@
 import { useState } from 'react';
-import type { Category, Receipt } from '../types';
-import { currentMonthKey, sortedCategoryRowsForMonth, suggestedBudget, totalBudget, totalSpendInMonth } from '../lib/derived';
+import type { Category, IncomeEntry, Receipt } from '../types';
+import {
+  currentMonthKey,
+  incomeTotalInMonth,
+  sortedCategoryRowsForMonth,
+  suggestedBudget,
+  totalBudget,
+  totalSpendInMonth,
+} from '../lib/derived';
 import { addCategory } from '../lib/categories';
 import { money } from '../lib/format';
 
 export function BudgetList({
   categories,
   receipts,
+  income,
   onCategoriesChange,
   showSummary = true,
 }: {
   categories: Category[];
   receipts: Receipt[];
+  income: IncomeEntry[];
   onCategoriesChange: (next: Category[]) => void;
   showSummary?: boolean;
 }) {
@@ -23,6 +32,8 @@ export function BudgetList({
   const remaining = budget - spent;
   const overallPct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const isOver = spent > budget && budget > 0;
+  const monthIncome = incomeTotalInMonth(income, monthKey);
+  const unallocated = monthIncome - budget;
 
   const suggestions = new Map(
     categories.map((c) => [c.name, suggestedBudget(receipts, c.name, monthKey)] as const),
@@ -63,6 +74,12 @@ export function BudgetList({
             {isOver ? `${money(spent - budget)} over budget` : `${money(remaining)} left this month`} · budget{' '}
             {money(budget)}
           </div>
+          {monthIncome > 0 && (
+            <div className="sub-line">
+              Income {money(monthIncome)} ·{' '}
+              {unallocated >= 0 ? `${money(unallocated)} unallocated` : `${money(-unallocated)} over income`}
+            </div>
+          )}
           <div className="bar-track" style={{ height: 8, marginBottom: 26 }}>
             <div
               className="bar-fill"

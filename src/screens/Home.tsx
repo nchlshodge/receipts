@@ -5,11 +5,13 @@ export function Home({
   onManualEntry,
   onOpenSearch,
   onOpenBudget,
+  onOpenIncome,
 }: {
   onFile: (file: File) => void;
   onManualEntry: () => void;
   onOpenSearch: () => void;
   onOpenBudget: () => void;
+  onOpenIncome: () => void;
 }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -69,9 +71,14 @@ export function Home({
         </button>
       </div>
 
-      <button className="budget-nav-btn" onClick={onOpenBudget}>
-        Budget &amp; categories
-      </button>
+      <div className="home-bottom-row">
+        <button className="budget-nav-btn" onClick={onOpenIncome}>
+          Income
+        </button>
+        <button className="budget-nav-btn" onClick={onOpenBudget}>
+          Budget &amp; categories
+        </button>
+      </div>
     </div>
   );
 }

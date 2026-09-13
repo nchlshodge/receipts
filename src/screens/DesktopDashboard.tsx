@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import type { Category, Receipt } from '../types';
-import { currentMonthKey, filterReceipts, totalBudget, totalSpendInMonth } from '../lib/derived';
+import type { Category, IncomeEntry, Receipt } from '../types';
+import { currentMonthKey, filterReceipts, incomeTotalInMonth, totalBudget, totalSpendInMonth } from '../lib/derived';
 import { money } from '../lib/format';
 import { BudgetList } from '../components/BudgetList';
 import { CategoryPill } from '../components/CategoryPill';
@@ -9,6 +9,7 @@ import { ReceiptRow } from '../components/ReceiptRow';
 export function DesktopDashboard({
   categories,
   receipts,
+  income,
   query,
   filter,
   onCategoriesChange,
@@ -17,9 +18,11 @@ export function DesktopDashboard({
   onOpenReceipt,
   onFile,
   onManualEntry,
+  onOpenIncome,
 }: {
   categories: Category[];
   receipts: Receipt[];
+  income: IncomeEntry[];
   query: string;
   filter: string | null;
   onCategoriesChange: (next: Category[]) => void;
@@ -28,12 +31,16 @@ export function DesktopDashboard({
   onOpenReceipt: (id: string) => void;
   onFile: (file: File) => void;
   onManualEntry: () => void;
+  onOpenIncome: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const spend = totalSpendInMonth(receipts, currentMonthKey());
+  const monthKey = currentMonthKey();
+  const spend = totalSpendInMonth(receipts, monthKey);
   const budget = totalBudget(categories);
   const remaining = budget - spend;
   const isOver = spend > budget && budget > 0;
+  const monthIncome = incomeTotalInMonth(income, monthKey);
+  const unallocated = monthIncome - budget;
   const results = filterReceipts(receipts, query, filter);
 
   return (
@@ -58,6 +65,12 @@ export function DesktopDashboard({
               {isOver ? `${money(spend - budget)} over budget` : `${money(remaining)} left this month`} · budget{' '}
               {money(budget)}
             </div>
+            {monthIncome > 0 && (
+              <div className="sub-line">
+                Income {money(monthIncome)} ·{' '}
+                {unallocated >= 0 ? `${money(unallocated)} unallocated` : `${money(-unallocated)} over income`}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
             <button className="btn btn-accent desktop-cta" onClick={() => fileRef.current?.click()}>
@@ -65,6 +78,9 @@ export function DesktopDashboard({
             </button>
             <button className="link-btn" onClick={onManualEntry} style={{ padding: '2px 0' }}>
               No receipt? Log it manually
+            </button>
+            <button className="link-btn" onClick={onOpenIncome} style={{ padding: '2px 0' }}>
+              Log income
             </button>
           </div>
         </div>
@@ -77,6 +93,7 @@ export function DesktopDashboard({
             <BudgetList
               categories={categories}
               receipts={receipts}
+              income={income}
               onCategoriesChange={onCategoriesChange}
               showSummary={false}
             />
