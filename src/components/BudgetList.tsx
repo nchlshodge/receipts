@@ -3,7 +3,6 @@ import type { Category, Receipt } from '../types';
 import { sortedCategoryRows, totalBudget, totalSpend } from '../lib/derived';
 import { addCategory } from '../lib/categories';
 import { money } from '../lib/format';
-import { CategoryPill } from './CategoryPill';
 
 export function BudgetList({
   categories,
@@ -35,10 +34,9 @@ export function BudgetList({
   }
 
   function removeCategory(name: string) {
+    if (categories.length <= 1) return;
     onCategoriesChange(categories.filter((c) => c.name !== name));
   }
-
-  const customCats = categories.filter((c) => c.custom);
 
   return (
     <div>
@@ -89,6 +87,14 @@ export function BudgetList({
                       setBudget(row.name, digits ? parseInt(digits, 10) : 0);
                     }}
                   />
+                  <button
+                    className="pill-remove"
+                    onClick={() => removeCategory(row.name)}
+                    aria-label={`Remove ${row.name}`}
+                    title={`Remove ${row.name}`}
+                  >
+                    ✕
+                  </button>
                 </span>
               </div>
               <div className="bar-track">
@@ -126,24 +132,6 @@ export function BudgetList({
             Add
           </button>
         </div>
-        {customCats.length > 0 && (
-          <div className="chip-row" style={{ marginTop: 14 }}>
-            {customCats.map((c) => (
-              <CategoryPill key={c.name} category={c} size="chip">
-                <button
-                  className="pill-remove"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeCategory(c.name);
-                  }}
-                  aria-label={`Remove ${c.name}`}
-                >
-                  ✕
-                </button>
-              </CategoryPill>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
