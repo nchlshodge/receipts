@@ -15,7 +15,7 @@ export function loadData(): PersistedData {
     if (!raw) return { receipts: [], categories: DEFAULT_CATEGORIES };
     const parsed = JSON.parse(raw) as PersistedData;
     return {
-      receipts: parsed.receipts ?? [],
+      receipts: (parsed.receipts ?? []).map((r) => ({ owed: false, repaid: false, ...r })),
       categories: parsed.categories?.length ? parsed.categories : DEFAULT_CATEGORIES,
     };
   } catch {

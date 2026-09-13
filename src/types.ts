@@ -17,6 +17,8 @@ export type Receipt = {
   date: string; // ISO yyyy-mm-dd
   items: ReceiptItem[];
   photoId: string | null;
+  owed: boolean; // paid out of pocket, waiting on reimbursement
+  repaid: boolean; // only meaningful when owed is true
 };
 
 export type Screen = 'home' | 'budget' | 'search' | 'scanning' | 'review' | 'detail';

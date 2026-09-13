@@ -437,6 +437,12 @@ button {
   display: flex;
   flex-direction: column;
 }
+.receipt-row-merchant-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 .receipt-row-merchant {
   font-size: 14.5px;
   font-weight: 500;
@@ -444,6 +450,7 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 .receipt-row-meta {
   font-size: 12.5px;
@@ -596,6 +603,44 @@ button {
   font-size: 19px;
   font-weight: 500;
 }
+.owed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--dashed);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.owed-toggle input {
+  cursor: pointer;
+}
+
+.owed-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: oklch(0.93 0.05 70);
+  color: oklch(0.45 0.1 60);
+}
+.owed-badge-repaid {
+  background: oklch(0.93 0.05 155);
+  color: var(--link);
+}
+
+.repaid-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 .review-actions {
   position: sticky;
   bottom: 0;

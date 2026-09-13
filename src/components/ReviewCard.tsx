@@ -82,6 +82,15 @@ export function ReviewCard({
         <span className="total-label">Total</span>
         <span className="total-amount mono">{money(receiptTotal(draft))}</span>
       </div>
+
+      <label className="owed-toggle">
+        <input
+          type="checkbox"
+          checked={draft.owed}
+          onChange={(e) => onChange({ ...draft, owed: e.target.checked, repaid: e.target.checked ? draft.repaid : false })}
+        />
+        I paid this myself — track it until I'm reimbursed
+      </label>
     </div>
   );
 }

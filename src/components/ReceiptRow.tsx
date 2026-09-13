@@ -19,7 +19,14 @@ export function ReceiptRow({
     <button className="receipt-row" onClick={onClick}>
       <span className="dot" style={{ background: ink }} />
       <span className="receipt-row-mid">
-        <span className="receipt-row-merchant">{receipt.merchant}</span>
+        <span className="receipt-row-merchant-line">
+          <span className="receipt-row-merchant">{receipt.merchant}</span>
+          {receipt.owed && (
+            <span className={`owed-badge ${receipt.repaid ? 'owed-badge-repaid' : ''}`}>
+              {receipt.repaid ? 'Repaid' : 'Owed'}
+            </span>
+          )}
+        </span>
         <span className="receipt-row-meta">
           {formatDate(receipt.date)} · {receipt.items.length} item{receipt.items.length === 1 ? '' : 's'}
         </span>

@@ -54,6 +54,8 @@ export default function App() {
       date: new Date().toISOString().slice(0, 10),
       items: [{ name: '', price: 0, category: other }],
       photoId: null,
+      owed: false,
+      repaid: false,
     };
     setDraftPhotoFile(null);
     setDraftPhotoUrl(null);
@@ -88,6 +90,8 @@ export default function App() {
         date: parsed.date,
         items,
         photoId: null,
+        owed: false,
+        repaid: false,
       };
 
       setTimeout(() => {
@@ -102,6 +106,8 @@ export default function App() {
         date: new Date().toISOString().slice(0, 10),
         items: [],
         photoId: null,
+        owed: false,
+        repaid: false,
       };
       setDraft(newDraft);
       setScreen('review');
@@ -151,6 +157,10 @@ export default function App() {
     if (receipt?.photoId) await deletePhoto(receipt.photoId);
     setDetailId(null);
     setScreen(prevScreen);
+  }
+
+  function toggleRepaid(id: string) {
+    setReceipts((prev) => prev.map((r) => (r.id === id ? { ...r, repaid: !r.repaid } : r)));
   }
 
   function assignCategory(categoryName: string) {
@@ -216,6 +226,7 @@ export default function App() {
             categories={categories}
             onBack={() => setScreen(prevScreen)}
             onDelete={() => deleteReceipt(detailReceipt.id)}
+            onToggleRepaid={() => toggleRepaid(detailReceipt.id)}
           />
         ) : null;
       default:

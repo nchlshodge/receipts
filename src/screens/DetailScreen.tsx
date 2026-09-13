@@ -10,11 +10,13 @@ export function DetailScreen({
   categories,
   onBack,
   onDelete,
+  onToggleRepaid,
 }: {
   receipt: Receipt;
   categories: Category[];
   onBack: () => void;
   onDelete: () => void;
+  onToggleRepaid: () => void;
 }) {
   const photoUrl = usePhotoUrl(receipt.photoId);
 
@@ -27,6 +29,16 @@ export function DetailScreen({
       <p className="detail-meta">
         {formatDate(receipt.date)} · {money(receiptTotal(receipt))}
       </p>
+      {receipt.owed && (
+        <div className="repaid-row">
+          <span className={`owed-badge ${receipt.repaid ? 'owed-badge-repaid' : ''}`}>
+            {receipt.repaid ? 'Repaid' : 'Owed'}
+          </span>
+          <button className="link-btn" onClick={onToggleRepaid}>
+            {receipt.repaid ? 'Mark as still owed' : 'Mark as repaid'}
+          </button>
+        </div>
+      )}
       {photoUrl && (
         <div className="detail-photo">
           <img src={photoUrl} alt={receipt.merchant} className="photo-preview" />
