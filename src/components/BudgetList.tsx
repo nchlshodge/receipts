@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Category, Receipt } from '../types';
-import { sortedCategoryRows, totalBudget, totalSpend } from '../lib/derived';
+import { currentMonthKey, sortedCategoryRowsForMonth, suggestedBudget, totalBudget, totalSpendInMonth } from '../lib/derived';
 import { addCategory } from '../lib/categories';
 import { money } from '../lib/format';
 
@@ -16,15 +16,30 @@ export function BudgetList({
   showSummary?: boolean;
 }) {
   const [newCat, setNewCat] = useState('');
-  const rows = sortedCategoryRows(categories, receipts);
-  const spent = totalSpend(receipts);
+  const monthKey = currentMonthKey();
+  const rows = sortedCategoryRowsForMonth(categories, receipts, monthKey);
+  const spent = totalSpendInMonth(receipts, monthKey);
   const budget = totalBudget(categories);
   const remaining = budget - spent;
   const overallPct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const isOver = spent > budget && budget > 0;
 
+  const suggestions = new Map(
+    categories.map((c) => [c.name, suggestedBudget(receipts, c.name, monthKey)] as const),
+  );
+  const hasAnySuggestion = [...suggestions.values()].some((v) => v !== null);
+
   function setBudget(name: string, value: number) {
     onCategoriesChange(categories.map((c) => (c.name === name ? { ...c, budget: value } : c)));
+  }
+
+  function applyAllSuggestions() {
+    onCategoriesChange(
+      categories.map((c) => {
+        const suggestion = suggestions.get(c.name);
+        return suggestion === null || suggestion === undefined ? c : { ...c, budget: suggestion };
+      }),
+    );
   }
 
   function handleAdd() {
@@ -60,10 +75,21 @@ export function BudgetList({
         </>
       )}
 
+      {hasAnySuggestion && (
+        <div className="suggest-row">
+          <span>Suggestions are based on your last 2 months of spending.</span>
+          <button className="link-btn" onClick={applyAllSuggestions}>
+            Apply all suggestions
+          </button>
+        </div>
+      )}
+
       <div className="category-rows">
         {rows.map((row) => {
           const over = row.budget > 0 && row.spent > row.budget;
           const pct = row.budget > 0 ? Math.min(100, Math.max(2, (row.spent / row.budget) * 100)) : 2;
+          const suggestion = suggestions.get(row.name);
+          const showSuggestion = suggestion !== null && suggestion !== undefined && suggestion !== row.budget;
           return (
             <div key={row.name} className="category-row">
               <div className="category-row-head">
@@ -110,6 +136,14 @@ export function BudgetList({
                   }}
                 />
               </div>
+              {showSuggestion && (
+                <div className="suggestion-hint">
+                  Last 2 months avg: {money(suggestion)}
+                  <button className="link-btn" onClick={() => setBudget(row.name, suggestion)}>
+                    Use this
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

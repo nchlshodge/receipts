@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import type { Category, Receipt } from '../types';
-import { filterReceipts, totalBudget, totalSpend } from '../lib/derived';
+import { currentMonthKey, filterReceipts, totalBudget, totalSpendInMonth } from '../lib/derived';
 import { money } from '../lib/format';
 import { BudgetList } from '../components/BudgetList';
 import { CategoryPill } from '../components/CategoryPill';
@@ -30,7 +30,7 @@ export function DesktopDashboard({
   onManualEntry: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const spend = totalSpend(receipts);
+  const spend = totalSpendInMonth(receipts, currentMonthKey());
   const budget = totalBudget(categories);
   const remaining = budget - spend;
   const isOver = spend > budget && budget > 0;
