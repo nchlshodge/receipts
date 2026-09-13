@@ -35,6 +35,7 @@ export function ReviewCard({
         <input
           className="merchant-input"
           value={draft.merchant}
+          placeholder="Merchant or description"
           onChange={(e) => onChange({ ...draft, merchant: e.target.value })}
         />
         <input

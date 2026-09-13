@@ -46,6 +46,21 @@ export default function App() {
     };
   }, [draftPhotoUrl]);
 
+  function startManualEntry() {
+    const other = categories.find((c) => c.name === 'Other')?.name ?? categories[0]?.name ?? 'Other';
+    const newDraft: Receipt = {
+      id: newId(),
+      merchant: '',
+      date: new Date().toISOString().slice(0, 10),
+      items: [{ name: '', price: 0, category: other }],
+      photoId: null,
+    };
+    setDraftPhotoFile(null);
+    setDraftPhotoUrl(null);
+    setDraft(newDraft);
+    setScreen('review');
+  }
+
   async function handleFile(file: File) {
     setDraftPhotoFile(file);
     setDraftPhotoUrl(URL.createObjectURL(file));
@@ -109,7 +124,12 @@ export default function App() {
       photoId = draft.id;
       await savePhoto(photoId, draftPhotoFile);
     }
-    const saved: Receipt = { ...draft, photoId };
+    const saved: Receipt = {
+      ...draft,
+      merchant: draft.merchant.trim() || 'Cash / no receipt',
+      items: draft.items.filter((it) => it.name.trim() || it.price > 0),
+      photoId,
+    };
     setReceipts((prev) => [saved, ...prev]);
     setDraft(null);
     setDraftPhotoFile(null);
@@ -147,7 +167,12 @@ export default function App() {
     switch (screen) {
       case 'home':
         return (
-          <Home onFile={handleFile} onOpenSearch={() => setScreen('search')} onOpenBudget={() => setScreen('budget')} />
+          <Home
+            onFile={handleFile}
+            onManualEntry={startManualEntry}
+            onOpenSearch={() => setScreen('search')}
+            onOpenBudget={() => setScreen('budget')}
+          />
         );
       case 'budget':
         return (
@@ -212,6 +237,7 @@ export default function App() {
             onFilterChange={setFilter}
             onOpenReceipt={(id) => openDetail(id, 'home')}
             onFile={handleFile}
+            onManualEntry={startManualEntry}
           />
           {(screen === 'scanning' || screen === 'review' || screen === 'detail') && (
             <div className="modal-scrim">

@@ -27,13 +27,11 @@ export function DetailScreen({
       <p className="detail-meta">
         {formatDate(receipt.date)} · {money(receiptTotal(receipt))}
       </p>
-      <div className="detail-photo">
-        {photoUrl ? (
+      {photoUrl && (
+        <div className="detail-photo">
           <img src={photoUrl} alt={receipt.merchant} className="photo-preview" />
-        ) : (
-          <span className="photo-label">original photo</span>
-        )}
-      </div>
+        </div>
+      )}
       {receipt.items.map((item, i) => {
         const cat = getCategory(categories, item.category);
         return (

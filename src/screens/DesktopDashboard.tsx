@@ -16,6 +16,7 @@ export function DesktopDashboard({
   onFilterChange,
   onOpenReceipt,
   onFile,
+  onManualEntry,
 }: {
   categories: Category[];
   receipts: Receipt[];
@@ -26,6 +27,7 @@ export function DesktopDashboard({
   onFilterChange: (f: string | null) => void;
   onOpenReceipt: (id: string) => void;
   onFile: (file: File) => void;
+  onManualEntry: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const spend = totalSpend(receipts);
@@ -57,9 +59,14 @@ export function DesktopDashboard({
               {money(budget)}
             </div>
           </div>
-          <button className="btn btn-accent desktop-cta" onClick={() => fileRef.current?.click()}>
-            Scan a receipt
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+            <button className="btn btn-accent desktop-cta" onClick={() => fileRef.current?.click()}>
+              Scan a receipt
+            </button>
+            <button className="link-btn" onClick={onManualEntry} style={{ padding: '2px 0' }}>
+              No receipt? Log it manually
+            </button>
+          </div>
         </div>
 
         <div className="desktop-grid">

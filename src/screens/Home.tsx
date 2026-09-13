@@ -2,10 +2,12 @@ import { useRef } from 'react';
 
 export function Home({
   onFile,
+  onManualEntry,
   onOpenSearch,
   onOpenBudget,
 }: {
   onFile: (file: File) => void;
+  onManualEntry: () => void;
   onOpenSearch: () => void;
   onOpenBudget: () => void;
 }) {
@@ -61,6 +63,9 @@ export function Home({
         </p>
         <button className="link-btn" onClick={() => fileRef.current?.click()}>
           Upload a photo instead
+        </button>
+        <button className="link-btn" onClick={onManualEntry}>
+          No receipt? Log it manually
         </button>
       </div>
 
