@@ -74,6 +74,36 @@ export function normalizeDate(raw: string): string | null {
   return null;
 }
 
+const MAX_HEADER_SEARCH_LINES = 5;
+
+/**
+ * Some banks prepend a line or two before the real header (an account title/number,
+ * a blank line) — scan the first few lines for the one that actually looks like a
+ * header, rather than assuming the header is always line 1.
+ */
+function findHeaderRow(lines: string[]): {
+  headerLineIndex: number;
+  dateIdx: number;
+  descIdx: number;
+  amountIdx: number;
+  debitIdx: number;
+  creditIdx: number;
+} | null {
+  const searchLimit = Math.min(MAX_HEADER_SEARCH_LINES, lines.length - 1);
+  for (let i = 0; i <= searchLimit; i++) {
+    const header = splitCsvLine(lines[i]).map((h) => h.toLowerCase());
+    const dateIdx = findColumn(header, DATE_COLS);
+    const descIdx = findColumn(header, DESCRIPTION_COLS);
+    const amountIdx = findColumn(header, AMOUNT_COLS);
+    const debitIdx = findColumn(header, DEBIT_COLS);
+    const creditIdx = findColumn(header, CREDIT_COLS);
+    if (dateIdx !== -1 && descIdx !== -1 && (amountIdx !== -1 || debitIdx !== -1 || creditIdx !== -1)) {
+      return { headerLineIndex: i, dateIdx, descIdx, amountIdx, debitIdx, creditIdx };
+    }
+  }
+  return null;
+}
+
 export function parseBankCsv(text: string): ParsedTransaction[] {
   const lines = text
     .replace(/^﻿/, '')
@@ -81,19 +111,12 @@ export function parseBankCsv(text: string): ParsedTransaction[] {
     .filter((l) => l.trim().length > 0);
   if (lines.length < 2) return [];
 
-  const header = splitCsvLine(lines[0]).map((h) => h.toLowerCase());
-  const dateIdx = findColumn(header, DATE_COLS);
-  const descIdx = findColumn(header, DESCRIPTION_COLS);
-  const amountIdx = findColumn(header, AMOUNT_COLS);
-  const debitIdx = findColumn(header, DEBIT_COLS);
-  const creditIdx = findColumn(header, CREDIT_COLS);
-
-  if (dateIdx === -1 || descIdx === -1 || (amountIdx === -1 && debitIdx === -1 && creditIdx === -1)) {
-    return [];
-  }
+  const header = findHeaderRow(lines);
+  if (!header) return [];
+  const { headerLineIndex, dateIdx, descIdx, amountIdx, debitIdx, creditIdx } = header;
 
   const results: ParsedTransaction[] = [];
-  for (const line of lines.slice(1)) {
+  for (const line of lines.slice(headerLineIndex + 1)) {
     const fields = splitCsvLine(line);
     const date = normalizeDate(fields[dateIdx] ?? '');
     const description = (fields[descIdx] ?? '').trim();
