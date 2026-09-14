@@ -1,4 +1,4 @@
-import type { Category } from '../types';
+import type { Category, IncomeCategory } from '../types';
 
 type Rule = { category: string; keywords: string[] };
 
@@ -77,4 +77,21 @@ export function categorize(itemName: string, merchant: string, categories: Categ
   }
   const other = categories.find((c) => c.name === 'Other');
   return other ? other.name : (categories[categories.length - 1]?.name ?? 'Other');
+}
+
+const INCOME_RULES: { category: string; keywords: string[] }[] = [
+  { category: 'Paycheck', keywords: ['payroll', 'direct dep', 'salary', 'paycheck'] },
+  { category: 'Self-Employment', keywords: ['invoice', 'freelance', 'contractor payment'] },
+  { category: 'Investments', keywords: ['interest', 'dividend', 'capital gain'] },
+  { category: 'Gifts', keywords: ['gift', 'venmo', 'zelle', 'cash app'] },
+];
+
+export function categorizeIncome(description: string, categories: IncomeCategory[]): string {
+  const haystack = description.toLowerCase();
+  for (const rule of INCOME_RULES) {
+    if (!categories.some((c) => c.name === rule.category)) continue;
+    if (rule.keywords.some((k) => haystack.includes(k))) return rule.category;
+  }
+  const other = categories.find((c) => c.name === 'Other');
+  return other ? other.name : (categories[0]?.name ?? 'Other');
 }

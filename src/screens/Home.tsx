@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { IMPORT_REMINDER_DAYS, daysSinceImport } from '../lib/derived';
 
 export function Home({
   onFile,
@@ -6,15 +7,21 @@ export function Home({
   onOpenSearch,
   onOpenBudget,
   onOpenIncome,
+  onOpenImport,
+  lastImportAt,
 }: {
   onFile: (file: File) => void;
   onManualEntry: () => void;
   onOpenSearch: () => void;
   onOpenBudget: () => void;
   onOpenIncome: () => void;
+  onOpenImport: () => void;
+  lastImportAt: string | null;
 }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const daysSince = daysSinceImport(lastImportAt);
+  const showImportReminder = daysSince === null || daysSince >= IMPORT_REMINDER_DAYS;
 
   return (
     <div className="screen home-screen">
@@ -49,6 +56,14 @@ export function Home({
         </button>
       </div>
 
+      {showImportReminder && (
+        <button className="import-reminder" onClick={onOpenImport}>
+          {daysSince === null
+            ? 'Import your bank transactions to get started →'
+            : `It's been ${daysSince} day${daysSince === 1 ? '' : 's'} since your last import →`}
+        </button>
+      )}
+
       <div className="home-center">
         <div className="hero-wrap">
           <div className="halo" />
@@ -68,6 +83,9 @@ export function Home({
         </button>
         <button className="link-btn" onClick={onManualEntry}>
           No receipt? Log it manually
+        </button>
+        <button className="link-btn" onClick={onOpenImport}>
+          Import bank CSV
         </button>
       </div>
 

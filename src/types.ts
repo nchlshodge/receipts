@@ -46,4 +46,4 @@ export type IncomeEntry = {
   accountId: string;
 };
 
-export type Screen = 'home' | 'budget' | 'search' | 'scanning' | 'review' | 'detail' | 'income';
+export type Screen = 'home' | 'budget' | 'search' | 'scanning' | 'review' | 'detail' | 'income' | 'import';

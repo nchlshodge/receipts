@@ -12,6 +12,7 @@ export type PersistedData = {
   accounts: Account[];
   incomeCategories: IncomeCategory[];
   income: IncomeEntry[];
+  lastImportAt: string | null;
 };
 
 function emptyData(): PersistedData {
@@ -21,6 +22,7 @@ function emptyData(): PersistedData {
     accounts: [DEFAULT_ACCOUNT],
     incomeCategories: DEFAULT_INCOME_CATEGORIES,
     income: [],
+    lastImportAt: null,
   };
 }
 
@@ -42,6 +44,7 @@ export function loadData(): PersistedData {
       accounts,
       incomeCategories: parsed.incomeCategories?.length ? parsed.incomeCategories : DEFAULT_INCOME_CATEGORIES,
       income: (parsed.income ?? []).map((i) => ({ ...i, accountId: i.accountId ?? defaultAccountId })),
+      lastImportAt: parsed.lastImportAt ?? null,
     };
   } catch {
     return emptyData();

@@ -1,6 +1,14 @@
 import { useRef } from 'react';
 import type { Category, IncomeEntry, Receipt } from '../types';
-import { currentMonthKey, filterReceipts, incomeTotalInMonth, totalBudget, totalSpendInMonth } from '../lib/derived';
+import {
+  IMPORT_REMINDER_DAYS,
+  currentMonthKey,
+  daysSinceImport,
+  filterReceipts,
+  incomeTotalInMonth,
+  totalBudget,
+  totalSpendInMonth,
+} from '../lib/derived';
 import { money } from '../lib/format';
 import { BudgetList } from '../components/BudgetList';
 import { CategoryPill } from '../components/CategoryPill';
@@ -19,6 +27,8 @@ export function DesktopDashboard({
   onFile,
   onManualEntry,
   onOpenIncome,
+  onOpenImport,
+  lastImportAt,
 }: {
   categories: Category[];
   receipts: Receipt[];
@@ -32,6 +42,8 @@ export function DesktopDashboard({
   onFile: (file: File) => void;
   onManualEntry: () => void;
   onOpenIncome: () => void;
+  onOpenImport: () => void;
+  lastImportAt: string | null;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const monthKey = currentMonthKey();
@@ -42,6 +54,8 @@ export function DesktopDashboard({
   const monthIncome = incomeTotalInMonth(income, monthKey);
   const unallocated = monthIncome - budget;
   const results = filterReceipts(receipts, query, filter);
+  const daysSince = daysSinceImport(lastImportAt);
+  const showImportReminder = daysSince === null || daysSince >= IMPORT_REMINDER_DAYS;
 
   return (
     <div className="desktop-shell">
@@ -82,8 +96,19 @@ export function DesktopDashboard({
             <button className="link-btn" onClick={onOpenIncome} style={{ padding: '2px 0' }}>
               Log income
             </button>
+            <button className="link-btn" onClick={onOpenImport} style={{ padding: '2px 0' }}>
+              Import bank CSV
+            </button>
           </div>
         </div>
+
+        {showImportReminder && (
+          <button className="import-reminder" onClick={onOpenImport}>
+            {daysSince === null
+              ? 'Import your bank transactions to get started →'
+              : `It's been ${daysSince} day${daysSince === 1 ? '' : 's'} since your last import →`}
+          </button>
+        )}
 
         <div className="desktop-grid">
           <div>

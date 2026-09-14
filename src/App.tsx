@@ -12,6 +12,7 @@ import { ScanningScreen } from './screens/ScanningScreen';
 import { ReviewScreen } from './screens/ReviewScreen';
 import { DetailScreen } from './screens/DetailScreen';
 import { IncomeScreen } from './screens/IncomeScreen';
+import { ImportScreen } from './screens/ImportScreen';
 import { DesktopDashboard } from './screens/DesktopDashboard';
 import { CategorySheet } from './components/CategorySheet';
 
@@ -26,6 +27,7 @@ export default function App() {
   const [accounts] = useState<Account[]>(initial.accounts);
   const [incomeCategories, setIncomeCategories] = useState<IncomeCategory[]>(initial.incomeCategories);
   const [income, setIncome] = useState<IncomeEntry[]>(initial.income);
+  const [lastImportAt, setLastImportAt] = useState<string | null>(initial.lastImportAt);
 
   const [screen, setScreen] = useState<Screen>('home');
   const [prevScreen, setPrevScreen] = useState<Screen>('home');
@@ -41,8 +43,8 @@ export default function App() {
   const isDesktop = useMediaQuery('(min-width: 900px)');
 
   useEffect(() => {
-    saveData({ categories, receipts, accounts, incomeCategories, income });
-  }, [categories, receipts, accounts, incomeCategories, income]);
+    saveData({ categories, receipts, accounts, incomeCategories, income, lastImportAt });
+  }, [categories, receipts, accounts, incomeCategories, income, lastImportAt]);
 
   useEffect(() => {
     return () => {
@@ -175,6 +177,13 @@ export default function App() {
     setIncome((prev) => prev.filter((i) => i.id !== id));
   }
 
+  function importTransactions(newReceipts: Receipt[], newIncome: IncomeEntry[]) {
+    if (newReceipts.length) setReceipts((prev) => [...newReceipts, ...prev]);
+    if (newIncome.length) setIncome((prev) => [...newIncome, ...prev]);
+    setLastImportAt(new Date().toISOString());
+    setScreen('home');
+  }
+
   function toggleRepaid(id: string) {
     setReceipts((prev) => prev.map((r) => (r.id === id ? { ...r, repaid: !r.repaid } : r)));
   }
@@ -199,6 +208,8 @@ export default function App() {
             onOpenSearch={() => setScreen('search')}
             onOpenBudget={() => setScreen('budget')}
             onOpenIncome={() => setScreen('income')}
+            onOpenImport={() => setScreen('import')}
+            lastImportAt={lastImportAt}
           />
         );
       case 'budget':
@@ -219,6 +230,17 @@ export default function App() {
             onAdd={addIncome}
             onDelete={deleteIncome}
             onCategoriesChange={setIncomeCategories}
+            onBack={() => setScreen('home')}
+          />
+        );
+      case 'import':
+        return (
+          <ImportScreen
+            receipts={receipts}
+            categories={categories}
+            income={income}
+            incomeCategories={incomeCategories}
+            onImport={importTransactions}
             onBack={() => setScreen('home')}
           />
         );
@@ -280,8 +302,14 @@ export default function App() {
             onFile={handleFile}
             onManualEntry={startManualEntry}
             onOpenIncome={() => setScreen('income')}
+            onOpenImport={() => setScreen('import')}
+            lastImportAt={lastImportAt}
           />
-          {(screen === 'scanning' || screen === 'review' || screen === 'detail' || screen === 'income') && (
+          {(screen === 'scanning' ||
+            screen === 'review' ||
+            screen === 'detail' ||
+            screen === 'income' ||
+            screen === 'import') && (
             <div className="modal-scrim">
               <div className="modal-card">{renderMobileScreen()}</div>
             </div>

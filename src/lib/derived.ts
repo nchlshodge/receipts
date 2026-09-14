@@ -8,6 +8,15 @@ export function totalBudget(categories: Category[]): number {
   return Math.round(categories.reduce((sum, c) => sum + c.budget, 0) * 100) / 100;
 }
 
+export const IMPORT_REMINDER_DAYS = 7;
+
+/** Days since the last CSV import, or null if one has never happened. */
+export function daysSinceImport(lastImportAt: string | null): number | null {
+  if (!lastImportAt) return null;
+  const ms = Date.now() - new Date(lastImportAt).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
 // ---- Month-scoped spend (real calendar months, for budget-vs-actual and suggestions) ----
 
 export function monthKeyOf(dateIso: string): string {
