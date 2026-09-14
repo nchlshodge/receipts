@@ -49,7 +49,7 @@ function findColumn(header: string[], candidates: string[]): number {
   return -1;
 }
 
-function parseAmount(raw: string): number {
+export function parseAmount(raw: string): number {
   const cleaned = raw.replace(/[^0-9.\-()]/g, '').trim();
   if (!cleaned) return NaN;
   const negative = cleaned.startsWith('(') && cleaned.endsWith(')');
@@ -58,7 +58,7 @@ function parseAmount(raw: string): number {
   return negative ? -num : num;
 }
 
-function normalizeDate(raw: string): string | null {
+export function normalizeDate(raw: string): string | null {
   const trimmed = raw.trim();
   const slashMatch = trimmed.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$/);
   if (slashMatch) {

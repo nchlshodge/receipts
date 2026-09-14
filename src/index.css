@@ -484,14 +484,38 @@ button {
   align-items: baseline;
   gap: 10px;
 }
-.import-row-desc {
+.import-row-desc-input {
   flex: 1;
   min-width: 0;
   font-size: 14px;
   color: var(--ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  border: none;
+  background: none;
+  outline: none;
+  padding: 0;
+}
+.direction-flip {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-input);
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.import-row-amount-input {
+  flex: none;
+  width: 72px;
+  font-size: 14px;
+  color: var(--ink-3);
+  text-align: right;
+  border: none;
+  background: none;
+  outline: none;
+  padding: 0;
 }
 .import-row-bottom {
   display: flex;
@@ -504,15 +528,6 @@ button {
   min-width: 130px;
   padding: 6px 9px;
   font-size: 12.5px;
-}
-.import-row-amount {
-  flex: none;
-  font-size: 14px;
-  color: var(--ink-3);
-  text-align: right;
-}
-.import-row-amount.income-amount {
-  color: var(--link);
 }
 
 /* Income */

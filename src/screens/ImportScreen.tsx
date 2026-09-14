@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import type { Category, IncomeCategory, IncomeEntry, Receipt } from '../types';
 import { parseBankCsv, type ParsedTransaction } from '../lib/csvImport';
+import { isPdfFile } from '../lib/fileType';
 import { categorize, categorizeIncome } from '../lib/categorize';
 import { receiptTotal } from '../lib/derived';
-import { formatDate, money } from '../lib/format';
+import { formatDate } from '../lib/format';
 
 type ImportRow = ParsedTransaction & {
   id: string;
@@ -41,29 +42,49 @@ export function ImportScreen({
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleFile(file: File) {
+  function applyParsed(parsed: ParsedTransaction[], notFoundMessage: string) {
+    if (parsed.length === 0) {
+      setError(notFoundMessage);
+      setRows(null);
+      return;
+    }
+    const existing = buildExistingSignatures(receipts, income);
+    const nextRows: ImportRow[] = parsed.map((t, i) => {
+      const sig = `${t.direction}|${t.date}|${Math.round(t.amount * 100)}|${t.description.toLowerCase().trim()}`;
+      const duplicate = existing.has(sig);
+      const category =
+        t.direction === 'out' ? categorize(t.description, '', categories) : categorizeIncome(t.description, incomeCategories);
+      return { ...t, id: `${i}-${t.date}-${t.amount}`, category, include: !duplicate, duplicate };
+    });
+    setRows(nextRows);
+  }
+
+  async function handleFile(file: File) {
     setError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result ?? '');
-      const parsed = parseBankCsv(text);
-      if (parsed.length === 0) {
-        setError("Couldn't find recognizable date/description/amount columns in that file.");
-        setRows(null);
-        return;
+    setRows(null);
+    setLoading(true);
+    try {
+      if (isPdfFile(file)) {
+        const { extractPdfText, parseStatementText } = await import('../lib/pdf');
+        const text = await extractPdfText(file);
+        const parsed = parseStatementText(text);
+        applyParsed(
+          parsed,
+          "Couldn't find transaction lines in that PDF — statement layouts vary a lot, so try the CSV export from your bank instead if this doesn't work.",
+        );
+      } else {
+        const text = await file.text();
+        const parsed = parseBankCsv(text);
+        applyParsed(parsed, "Couldn't find recognizable date/description/amount columns in that file.");
       }
-      const existing = buildExistingSignatures(receipts, income);
-      const nextRows: ImportRow[] = parsed.map((t, i) => {
-        const sig = `${t.direction}|${t.date}|${Math.round(t.amount * 100)}|${t.description.toLowerCase().trim()}`;
-        const duplicate = existing.has(sig);
-        const category =
-          t.direction === 'out' ? categorize(t.description, '', categories) : categorizeIncome(t.description, incomeCategories);
-        return { ...t, id: `${i}-${t.date}-${t.amount}`, category, include: !duplicate, duplicate };
-      });
-      setRows(nextRows);
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      console.error('Import parse failed', err);
+      setError("Couldn't read that file.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function updateRow(id: string, patch: Partial<ImportRow>) {
@@ -114,7 +135,7 @@ export function ImportScreen({
       <input
         ref={fileRef}
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,text/csv,.pdf,application/pdf"
         style={{ display: 'none' }}
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -122,11 +143,18 @@ export function ImportScreen({
           e.target.value = '';
         }}
       />
-      <button className="btn btn-accent" onClick={() => fileRef.current?.click()}>
-        Choose CSV file
+      <button className="btn btn-accent" onClick={() => fileRef.current?.click()} disabled={loading}>
+        {loading ? 'Reading file…' : 'Choose CSV or PDF file'}
       </button>
 
       {error && <p className="empty-state" style={{ textAlign: 'left', color: 'var(--over-text)' }}>{error}</p>}
+
+      {rows && (
+        <p className="review-sub" style={{ margin: '16px 0 0' }}>
+          PDF statements are less consistent than CSV exports — double-check the amounts and whether each row is
+          money in or out below.
+        </p>
+      )}
 
       {rows && (
         <>
@@ -142,11 +170,35 @@ export function ImportScreen({
                   />
                   <div className="import-row-mid">
                     <div className="import-row-top">
-                      <div className="import-row-desc">{row.description}</div>
-                      <span className={`mono import-row-amount ${row.direction === 'in' ? 'income-amount' : ''}`}>
+                      <input
+                        className="import-row-desc-input"
+                        value={row.description}
+                        onChange={(e) => updateRow(row.id, { description: e.target.value })}
+                      />
+                      <button
+                        className="direction-flip"
+                        style={row.direction === 'in' ? { color: 'var(--link)', borderColor: 'var(--link)' } : undefined}
+                        title="Toggle money in / out"
+                        onClick={() => {
+                          const nextDirection = row.direction === 'in' ? 'out' : 'in';
+                          const nextCats = nextDirection === 'out' ? categories : incomeCategories;
+                          updateRow(row.id, {
+                            direction: nextDirection,
+                            category: nextCats.find((c) => c.name === row.category)?.name ?? nextCats[0]?.name ?? 'Other',
+                          });
+                        }}
+                      >
                         {row.direction === 'in' ? '+' : '−'}
-                        {money(row.amount)}
-                      </span>
+                      </button>
+                      <input
+                        className="import-row-amount-input mono"
+                        inputMode="decimal"
+                        value={row.amount === 0 ? '' : String(row.amount)}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^0-9.]/g, '');
+                          updateRow(row.id, { amount: v ? parseFloat(v) : 0 });
+                        }}
+                      />
                     </div>
                     <div className="import-row-bottom">
                       <span className="receipt-row-meta">{formatDate(row.date)}</span>

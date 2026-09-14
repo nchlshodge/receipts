@@ -63,7 +63,7 @@ export function DesktopDashboard({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf,application/pdf"
           style={{ display: 'none' }}
           onChange={(e) => {
             const f = e.target.files?.[0];

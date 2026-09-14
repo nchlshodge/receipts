@@ -40,7 +40,7 @@ export function Home({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf,application/pdf"
         style={{ display: 'none' }}
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -79,7 +79,7 @@ export function Home({
           Point your camera at it — I'll pull out the items and file them for you.
         </p>
         <button className="link-btn" onClick={() => fileRef.current?.click()}>
-          Upload a photo instead
+          Upload a photo or PDF instead
         </button>
         <button className="link-btn" onClick={onManualEntry}>
           No receipt? Log it manually

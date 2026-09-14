@@ -3,6 +3,7 @@ import type { Account, Category, IncomeCategory, IncomeEntry, Receipt, Screen } 
 import { loadData, saveData, savePhoto, deletePhoto } from './lib/storage';
 import { recognizeReceiptText, parseReceiptText } from './lib/ocr';
 import { categorize } from './lib/categorize';
+import { isPdfFile } from './lib/fileType';
 import { useMediaQuery } from './hooks';
 
 import { Home } from './screens/Home';
@@ -71,15 +72,37 @@ export default function App() {
   }
 
   async function handleFile(file: File) {
-    setDraftPhotoFile(file);
-    setDraftPhotoUrl(URL.createObjectURL(file));
     setScreen('scanning');
-    setScanStatus('Reading the receipt…');
+    setDraftPhotoFile(null);
+    setDraftPhotoUrl(null);
 
     try {
-      const text = await recognizeReceiptText(file, (fraction) => {
-        setScanStatus(`Reading the receipt… ${Math.round(fraction * 100)}%`);
-      });
+      let ocrInput: Blob = file;
+      let text: string | null = null;
+
+      if (isPdfFile(file)) {
+        setScanStatus('Reading the PDF…');
+        const { extractPdfText, renderPdfPageToBlob } = await import('./lib/pdf');
+        const extracted = await extractPdfText(file);
+        if (extracted.replace(/\s/g, '').length > 20) text = extracted;
+
+        const rendered = await renderPdfPageToBlob(file);
+        ocrInput = rendered;
+        const renderedFile = new File([rendered], 'receipt.png', { type: 'image/png' });
+        setDraftPhotoFile(renderedFile);
+        setDraftPhotoUrl(URL.createObjectURL(rendered));
+      } else {
+        setDraftPhotoFile(file);
+        setDraftPhotoUrl(URL.createObjectURL(file));
+      }
+
+      if (text === null) {
+        setScanStatus('Reading the receipt…');
+        text = await recognizeReceiptText(ocrInput, (fraction) => {
+          setScanStatus(`Reading the receipt… ${Math.round(fraction * 100)}%`);
+        });
+      }
+
       const parsed = parseReceiptText(text);
       setScanStatus(
         `Sorting ${parsed.items.length} item${parsed.items.length === 1 ? '' : 's'} into categories…`,
