@@ -106,6 +106,53 @@ export function filterIncome(income: IncomeEntry[], query: string, filter: strin
   });
 }
 
+// ---- Cross-source duplicate detection for imports ----
+
+export const DUPLICATE_DATE_WINDOW_DAYS = 3;
+
+type ExistingTransaction = { direction: 'in' | 'out'; date: string; amountCents: number };
+
+function daysBetween(a: string, b: string): number {
+  const ms = Math.abs(new Date(`${a}T00:00:00`).getTime() - new Date(`${b}T00:00:00`).getTime());
+  return ms / (1000 * 60 * 60 * 24);
+}
+
+export function existingTransactionsFor(receipts: Receipt[], income: IncomeEntry[]): ExistingTransaction[] {
+  const out: ExistingTransaction[] = receipts.map((r) => ({
+    direction: 'out' as const,
+    date: r.date,
+    amountCents: Math.round(receiptTotal(r) * 100),
+  }));
+  const ins: ExistingTransaction[] = income.map((i) => ({
+    direction: 'in' as const,
+    date: i.date,
+    amountCents: Math.round(i.amount * 100),
+  }));
+  return [...out, ...ins];
+}
+
+/**
+ * A receipt scanned by hand and the same purchase later showing up in an
+ * imported bank statement almost never share description text (banks use
+ * abbreviated/coded merchant names) and can post a day or two apart — so
+ * matching on date+amount+description (exact) misses that real-world case.
+ * This matches on amount plus a tolerant date window instead, which catches
+ * cross-source duplicates at the cost of occasionally flagging two unrelated
+ * same-day, same-amount transactions — always reviewable before import.
+ */
+export function isLikelyDuplicate(
+  candidate: { direction: 'in' | 'out'; date: string; amount: number },
+  existing: ExistingTransaction[],
+): boolean {
+  const amountCents = Math.round(candidate.amount * 100);
+  return existing.some(
+    (e) =>
+      e.direction === candidate.direction &&
+      e.amountCents === amountCents &&
+      daysBetween(e.date, candidate.date) <= DUPLICATE_DATE_WINDOW_DAYS,
+  );
+}
+
 export function firstItemCategory(receipt: Receipt): string {
   return receipt.items[0]?.category ?? 'Other';
 }

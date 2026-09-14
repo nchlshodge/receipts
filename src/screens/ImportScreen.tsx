@@ -3,7 +3,7 @@ import type { Category, IncomeCategory, IncomeEntry, Receipt } from '../types';
 import { parseBankCsv, type ParsedTransaction } from '../lib/csvImport';
 import { isPdfFile } from '../lib/fileType';
 import { categorize, categorizeIncome } from '../lib/categorize';
-import { receiptTotal } from '../lib/derived';
+import { existingTransactionsFor, isLikelyDuplicate } from '../lib/derived';
 import { formatDate } from '../lib/format';
 
 type ImportRow = ParsedTransaction & {
@@ -12,17 +12,6 @@ type ImportRow = ParsedTransaction & {
   include: boolean;
   duplicate: boolean;
 };
-
-function buildExistingSignatures(receipts: Receipt[], income: IncomeEntry[]): Set<string> {
-  const sigs = new Set<string>();
-  for (const r of receipts) {
-    sigs.add(`out|${r.date}|${Math.round(receiptTotal(r) * 100)}|${r.merchant.toLowerCase().trim()}`);
-  }
-  for (const i of income) {
-    sigs.add(`in|${i.date}|${Math.round(i.amount * 100)}|${i.source.toLowerCase().trim()}`);
-  }
-  return sigs;
-}
 
 export function ImportScreen({
   receipts,
@@ -50,10 +39,9 @@ export function ImportScreen({
       setRows(null);
       return;
     }
-    const existing = buildExistingSignatures(receipts, income);
+    const existing = existingTransactionsFor(receipts, income);
     const nextRows: ImportRow[] = parsed.map((t, i) => {
-      const sig = `${t.direction}|${t.date}|${Math.round(t.amount * 100)}|${t.description.toLowerCase().trim()}`;
-      const duplicate = existing.has(sig);
+      const duplicate = isLikelyDuplicate(t, existing);
       const category =
         t.direction === 'out' ? categorize(t.description, '', categories) : categorizeIncome(t.description, incomeCategories);
       return { ...t, id: `${i}-${t.date}-${t.amount}`, category, include: !duplicate, duplicate };
@@ -202,7 +190,11 @@ export function ImportScreen({
                     </div>
                     <div className="import-row-bottom">
                       <span className="receipt-row-meta">{formatDate(row.date)}</span>
-                      {row.duplicate && <span className="owed-badge">Already imported</span>}
+                      {row.duplicate && (
+                        <span className="owed-badge" title="Same amount and direction within 3 days of an existing entry">
+                          Possible duplicate
+                        </span>
+                      )}
                       <select
                         className="text-input import-category-select"
                         value={row.category}
