@@ -11,13 +11,18 @@ export type ReceiptItem = {
   category: string;
 };
 
-// A pool of money a transaction moves into/out of. Only one exists today
-// ("Checking"), but every transaction already records which account it
-// touched so a later move to double-entry accounting is additive, not a
-// rewrite: this field plus a chart-of-accounts table is most of the work.
+// A pool of money a transaction moves into/out of. Every transaction records
+// which account it touched so a later move to double-entry accounting is
+// additive, not a rewrite: this field plus a chart-of-accounts table is most
+// of the work. "balance" is only meaningful for credit accounts — it's a
+// manually-entered "what my last statement said I owe" figure, not something
+// computed from imported transactions (which would be wrong for any account
+// whose full history hasn't been imported).
 export type Account = {
   id: string;
   name: string;
+  kind: 'checking' | 'credit';
+  balance: number;
 };
 
 export type Receipt = {

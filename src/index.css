@@ -450,6 +450,27 @@ button {
 }
 
 /* Import */
+.account-select-row {
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.account-select-label {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--muted-2);
+}
+.new-account-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .import-rows {
   display: flex;
   flex-direction: column;
@@ -553,6 +574,67 @@ button {
 }
 .income-row .item-remove {
   flex: none;
+}
+
+/* Accounts & debt */
+.accounts-panel {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hairline);
+}
+.total-debt-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.account-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  border-radius: 12px;
+}
+.account-row-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.account-name {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.account-kind {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 2px;
+}
+.account-balance-input {
+  width: 90px;
+}
+.faint-note {
+  color: var(--faint);
+  font-size: 13px;
+}
+.add-account-row {
+  display: flex;
+  gap: 8px;
+}
+.add-account-row select {
+  flex: none;
+  width: auto;
 }
 
 /* Search */

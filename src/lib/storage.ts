@@ -4,7 +4,7 @@ import { DEFAULT_CATEGORIES } from './categories';
 import { DEFAULT_INCOME_CATEGORIES } from './incomeCategories';
 
 const DATA_KEY = 'church-receipts:v1';
-const DEFAULT_ACCOUNT: Account = { id: 'default', name: 'Checking' };
+const DEFAULT_ACCOUNT: Account = { id: 'default', name: 'Checking', kind: 'checking', balance: 0 };
 
 export type PersistedData = {
   receipts: Receipt[];
@@ -31,7 +31,11 @@ export function loadData(): PersistedData {
     const raw = localStorage.getItem(DATA_KEY);
     if (!raw) return emptyData();
     const parsed = JSON.parse(raw) as Partial<PersistedData>;
-    const accounts = parsed.accounts?.length ? parsed.accounts : [DEFAULT_ACCOUNT];
+    const accounts = (parsed.accounts?.length ? parsed.accounts : [DEFAULT_ACCOUNT]).map((a) => ({
+      ...a,
+      kind: a.kind ?? 'checking',
+      balance: a.balance ?? 0,
+    }));
     const defaultAccountId = accounts[0].id;
     return {
       receipts: (parsed.receipts ?? []).map((r) => ({

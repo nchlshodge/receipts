@@ -5,6 +5,30 @@ export type ParsedTransaction = {
   direction: 'in' | 'out';
 };
 
+const TRANSFER_KEYWORDS = [
+  'payment received',
+  'payment - thank you',
+  'thank you for your payment',
+  'online payment',
+  'internet payment',
+  'card payment - thank you',
+  'autopay',
+  'auto pay',
+  'ach payment',
+  'balance transfer',
+];
+
+/**
+ * A credit card payment (or the matching outflow from a checking account)
+ * is money moving between your own accounts, not real income or spending —
+ * counting it as either would double up against the actual purchases it's
+ * paying off. Flagged so it's excluded by default, same as duplicates.
+ */
+export function looksLikeTransfer(description: string): boolean {
+  const lower = description.toLowerCase();
+  return TRANSFER_KEYWORDS.some((k) => lower.includes(k));
+}
+
 const DATE_COLS = ['date', 'transaction date', 'posting date', 'trans date'];
 const DESCRIPTION_COLS = ['description', 'memo', 'name', 'payee', 'merchant'];
 const AMOUNT_COLS = ['amount'];

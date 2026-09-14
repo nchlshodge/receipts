@@ -1,23 +1,28 @@
 import { useRef, useState } from 'react';
-import type { Category, IncomeCategory, IncomeEntry, Receipt } from '../types';
-import { parseBankCsv, type ParsedTransaction } from '../lib/csvImport';
+import type { Account, Category, IncomeCategory, IncomeEntry, Receipt } from '../types';
+import { looksLikeTransfer, parseBankCsv, type ParsedTransaction } from '../lib/csvImport';
 import { isPdfFile } from '../lib/fileType';
 import { categorize, categorizeIncome } from '../lib/categorize';
 import { existingTransactionsFor, isLikelyDuplicate } from '../lib/derived';
-import { formatDate } from '../lib/format';
+import { formatDate, money } from '../lib/format';
 
 type ImportRow = ParsedTransaction & {
   id: string;
   category: string;
   include: boolean;
   duplicate: boolean;
+  transferLike: boolean;
 };
+
+const NEW_ACCOUNT = '__new__';
 
 export function ImportScreen({
   receipts,
   categories,
   income,
   incomeCategories,
+  accounts,
+  onAccountsChange,
   onImport,
   onBack,
 }: {
@@ -25,6 +30,8 @@ export function ImportScreen({
   categories: Category[];
   income: IncomeEntry[];
   incomeCategories: IncomeCategory[];
+  accounts: Account[];
+  onAccountsChange: (next: Account[]) => void;
   onImport: (newReceipts: Receipt[], newIncome: IncomeEntry[]) => void;
   onBack: () => void;
 }) {
@@ -32,6 +39,22 @@ export function ImportScreen({
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [accountId, setAccountId] = useState(accounts[0]?.id ?? '');
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountKind, setNewAccountKind] = useState<'checking' | 'credit'>('credit');
+  const [balanceInput, setBalanceInput] = useState('');
+
+  const selectedAccount = accounts.find((a) => a.id === accountId) ?? null;
+  const isAddingAccount = accountId === NEW_ACCOUNT;
+
+  function handleAccountSelect(id: string) {
+    setAccountId(id);
+    if (id !== NEW_ACCOUNT) {
+      const acct = accounts.find((a) => a.id === id);
+      setBalanceInput(acct && acct.kind === 'credit' && acct.balance !== 0 ? String(acct.balance) : '');
+    }
+  }
 
   function applyParsed(parsed: ParsedTransaction[], notFoundMessage: string) {
     if (parsed.length === 0) {
@@ -42,9 +65,10 @@ export function ImportScreen({
     const existing = existingTransactionsFor(receipts, income);
     const nextRows: ImportRow[] = parsed.map((t, i) => {
       const duplicate = isLikelyDuplicate(t, existing);
+      const transferLike = looksLikeTransfer(t.description);
       const category =
         t.direction === 'out' ? categorize(t.description, '', categories) : categorizeIncome(t.description, incomeCategories);
-      return { ...t, id: `${i}-${t.date}-${t.amount}`, category, include: !duplicate, duplicate };
+      return { ...t, id: `${i}-${t.date}-${t.amount}`, category, include: !duplicate && !transferLike, duplicate, transferLike };
     });
     setRows(nextRows);
   }
@@ -81,6 +105,30 @@ export function ImportScreen({
 
   function handleImport() {
     if (!rows) return;
+
+    let targetAccountId = accountId;
+    let nextAccounts = accounts;
+
+    if (isAddingAccount) {
+      const trimmed = newAccountName.trim();
+      if (!trimmed) return;
+      const newAccount: Account = {
+        id: crypto.randomUUID(),
+        name: trimmed,
+        kind: newAccountKind,
+        balance: newAccountKind === 'credit' ? parseFloat(balanceInput.replace(/[^0-9.]/g, '')) || 0 : 0,
+      };
+      nextAccounts = [...accounts, newAccount];
+      targetAccountId = newAccount.id;
+    } else if (selectedAccount?.kind === 'credit') {
+      const newBalance = parseFloat(balanceInput.replace(/[^0-9.]/g, '')) || 0;
+      if (newBalance !== selectedAccount.balance) {
+        nextAccounts = accounts.map((a) => (a.id === selectedAccount.id ? { ...a, balance: newBalance } : a));
+      }
+    }
+
+    if (nextAccounts !== accounts) onAccountsChange(nextAccounts);
+
     const included = rows.filter((r) => r.include);
     const newReceipts: Receipt[] = included
       .filter((r) => r.direction === 'out')
@@ -92,7 +140,7 @@ export function ImportScreen({
         photoId: null,
         owed: false,
         repaid: false,
-        accountId: 'default',
+        accountId: targetAccountId,
       }));
     const newIncome: IncomeEntry[] = included
       .filter((r) => r.direction === 'in')
@@ -102,12 +150,13 @@ export function ImportScreen({
         date: r.date,
         amount: r.amount,
         category: r.category,
-        accountId: 'default',
+        accountId: targetAccountId,
       }));
     onImport(newReceipts, newIncome);
   }
 
   const includedCount = rows?.filter((r) => r.include).length ?? 0;
+  const canImport = includedCount > 0 && (!isAddingAccount || newAccountName.trim().length > 0);
 
   return (
     <div className="screen import-screen">
@@ -116,9 +165,64 @@ export function ImportScreen({
       </button>
       <div className="eyebrow">Import bank transactions</div>
       <p className="review-sub">
-        Export a CSV from your bank (usually under "Download transactions") and upload it here. Nothing is saved
-        until you review it below.
+        Export a CSV from your bank or credit card (usually under "Download transactions") and upload it here.
+        Nothing is saved until you review it below.
       </p>
+
+      <div className="account-select-row">
+        <label className="account-select-label">Which account is this for?</label>
+        <select className="text-input" value={accountId} onChange={(e) => handleAccountSelect(e.target.value)}>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name} ({a.kind === 'credit' ? 'Credit card' : 'Checking / cash'})
+            </option>
+          ))}
+          <option value={NEW_ACCOUNT}>+ Add a new account…</option>
+        </select>
+
+        {isAddingAccount && (
+          <div className="new-account-row">
+            <input
+              className="text-input"
+              style={{ flex: 1 }}
+              placeholder="e.g. Visa"
+              value={newAccountName}
+              onChange={(e) => setNewAccountName(e.target.value)}
+            />
+            <select
+              className="text-input"
+              value={newAccountKind}
+              onChange={(e) => setNewAccountKind(e.target.value as 'checking' | 'credit')}
+            >
+              <option value="credit">Credit card</option>
+              <option value="checking">Checking / cash</option>
+            </select>
+          </div>
+        )}
+
+        {(isAddingAccount ? newAccountKind === 'credit' : selectedAccount?.kind === 'credit') && (
+          <div className="new-account-row">
+            <label className="account-select-label" style={{ flex: 'none' }}>
+              Current balance owed (from this statement)
+            </label>
+            <input
+              className="text-input mono"
+              style={{ width: 110 }}
+              inputMode="decimal"
+              placeholder="0.00"
+              value={balanceInput}
+              onChange={(e) => setBalanceInput(e.target.value.replace(/[^0-9.]/g, ''))}
+            />
+          </div>
+        )}
+
+        {(isAddingAccount ? newAccountKind === 'credit' : selectedAccount?.kind === 'credit') && (
+          <p className="review-sub" style={{ margin: 0 }}>
+            Credit card exports don't all use the same sign for charges vs. payments — check the +/− on each row
+            below rather than trusting it automatically.
+          </p>
+        )}
+      </div>
 
       <input
         ref={fileRef}
@@ -195,6 +299,11 @@ export function ImportScreen({
                           Possible duplicate
                         </span>
                       )}
+                      {!row.duplicate && row.transferLike && (
+                        <span className="owed-badge" title="Looks like a payment/transfer between your own accounts">
+                          Looks like a payment
+                        </span>
+                      )}
                       <select
                         className="text-input import-category-select"
                         value={row.category}
@@ -213,8 +322,11 @@ export function ImportScreen({
             })}
           </div>
 
-          <button className="btn btn-accent" style={{ width: '100%', marginTop: 16 }} onClick={handleImport} disabled={includedCount === 0}>
+          <button className="btn btn-accent" style={{ width: '100%', marginTop: 16 }} onClick={handleImport} disabled={!canImport}>
             Import {includedCount} transaction{includedCount === 1 ? '' : 's'}
+            {(isAddingAccount ? newAccountKind === 'credit' : selectedAccount?.kind === 'credit') && balanceInput
+              ? ` · balance ${money(parseFloat(balanceInput) || 0)}`
+              : ''}
           </button>
         </>
       )}

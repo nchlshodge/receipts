@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { Category, IncomeEntry, Receipt } from '../types';
+import type { Account, Category, IncomeEntry, Receipt } from '../types';
 import {
   IMPORT_REMINDER_DAYS,
   currentMonthKey,
@@ -11,6 +11,7 @@ import {
 } from '../lib/derived';
 import { money } from '../lib/format';
 import { BudgetList } from '../components/BudgetList';
+import { AccountsPanel } from '../components/AccountsPanel';
 import { CategoryPill } from '../components/CategoryPill';
 import { ReceiptRow } from '../components/ReceiptRow';
 
@@ -18,9 +19,11 @@ export function DesktopDashboard({
   categories,
   receipts,
   income,
+  accounts,
   query,
   filter,
   onCategoriesChange,
+  onAccountsChange,
   onQueryChange,
   onFilterChange,
   onOpenReceipt,
@@ -33,9 +36,11 @@ export function DesktopDashboard({
   categories: Category[];
   receipts: Receipt[];
   income: IncomeEntry[];
+  accounts: Account[];
   query: string;
   filter: string | null;
   onCategoriesChange: (next: Category[]) => void;
+  onAccountsChange: (next: Account[]) => void;
   onQueryChange: (q: string) => void;
   onFilterChange: (f: string | null) => void;
   onOpenReceipt: (id: string) => void;
@@ -122,6 +127,7 @@ export function DesktopDashboard({
               onCategoriesChange={onCategoriesChange}
               showSummary={false}
             />
+            <AccountsPanel accounts={accounts} onAccountsChange={onAccountsChange} />
           </div>
           <div>
             <div className="eyebrow" style={{ marginBottom: 12 }}>

@@ -25,7 +25,7 @@ export default function App() {
   const initial = useRef(loadData()).current;
   const [categories, setCategories] = useState<Category[]>(initial.categories);
   const [receipts, setReceipts] = useState<Receipt[]>(initial.receipts);
-  const [accounts] = useState<Account[]>(initial.accounts);
+  const [accounts, setAccounts] = useState<Account[]>(initial.accounts);
   const [incomeCategories, setIncomeCategories] = useState<IncomeCategory[]>(initial.incomeCategories);
   const [income, setIncome] = useState<IncomeEntry[]>(initial.income);
   const [lastImportAt, setLastImportAt] = useState<string | null>(initial.lastImportAt);
@@ -241,7 +241,9 @@ export default function App() {
             categories={categories}
             receipts={receipts}
             income={income}
+            accounts={accounts}
             onCategoriesChange={setCategories}
+            onAccountsChange={setAccounts}
             onBack={() => setScreen('home')}
           />
         );
@@ -263,6 +265,8 @@ export default function App() {
             categories={categories}
             income={income}
             incomeCategories={incomeCategories}
+            accounts={accounts}
+            onAccountsChange={setAccounts}
             onImport={importTransactions}
             onBack={() => setScreen('home')}
           />
@@ -316,9 +320,11 @@ export default function App() {
             categories={categories}
             receipts={receipts}
             income={income}
+            accounts={accounts}
             query={query}
             filter={filter}
             onCategoriesChange={setCategories}
+            onAccountsChange={setAccounts}
             onQueryChange={setQuery}
             onFilterChange={setFilter}
             onOpenReceipt={(id) => openDetail(id, 'home')}
